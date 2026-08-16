@@ -7,6 +7,37 @@
 
 namespace apogee::data {
 
+namespace {
+MotorSummary motorFromQuery(const QSqlQuery& q) {
+    MotorSummary m;
+    m.id = q.value("id").toLongLong();
+    m.motorId = q.value("thrustcurve_motor_id").toString();
+    m.manufacturer = q.value("manufacturer").toString();
+    m.manufacturerAbbrev = q.value("manufacturer_abbrev").toString();
+    m.designation = q.value("designation").toString();
+    m.commonName = q.value("common_name").toString();
+    m.impulseClass = q.value("impulse_class").toString();
+    m.diameterMm = q.value("diameter_mm").toDouble();
+    m.lengthMm = q.value("length_mm").toDouble();
+    m.motorType = q.value("motor_type").toString();
+    m.certOrg = q.value("cert_org").toString();
+    m.avgThrustN = q.value("avg_thrust_n").toDouble();
+    m.maxThrustN = q.value("max_thrust_n").toDouble();
+    m.totImpulseNs = q.value("tot_impulse_ns").toDouble();
+    m.burnTimeS = q.value("burn_time_s").toDouble();
+    m.totalWeightG = q.value("total_weight_g").toDouble();
+    m.propWeightG = q.value("prop_weight_g").toDouble();
+    m.delays = q.value("delays").toString();
+    m.delayAdjustable = q.value("delay_adjustable").toInt() != 0;
+    m.propInfo = q.value("prop_info").toString();
+    m.sparky = q.value("sparky").toInt() != 0;
+    m.availability = q.value("availability").toString();
+    m.infoUrl = q.value("info_url").toString();
+    m.updatedOn = q.value("updated_on").toString();
+    return m;
+}
+}  // namespace
+
 MotorRepository::MotorRepository(QSqlDatabase& db) : db_(db) {}
 
 qint64 MotorRepository::upsertMotor(const MotorSummary& motor) {
@@ -119,6 +150,44 @@ int MotorRepository::motorCount() {
     query.exec("SELECT COUNT(*) FROM motors");
     query.next();
     return query.value(0).toInt();
+}
+
+QVector<MotorSummary> MotorRepository::listAll() {
+    QVector<MotorSummary> result;
+    QSqlQuery query(db_);
+    query.exec("SELECT * FROM motors ORDER BY manufacturer, designation");
+    while (query.next()) {
+        result.push_back(motorFromQuery(query));
+    }
+    return result;
+}
+
+std::optional<MotorSummary> MotorRepository::getById(qint64 id) {
+    QSqlQuery query(db_);
+    query.prepare("SELECT * FROM motors WHERE id = ?");
+    query.addBindValue(id);
+    query.exec();
+    if (!query.next()) return std::nullopt;
+    return motorFromQuery(query);
+}
+
+QVector<ThrustSample> MotorRepository::getCachedSamples(qint64 motorId) {
+    QVector<ThrustSample> result;
+    QSqlQuery findSimfile(db_);
+    findSimfile.prepare("SELECT id FROM motor_simfiles WHERE motor_id = ? LIMIT 1");
+    findSimfile.addBindValue(motorId);
+    findSimfile.exec();
+    if (!findSimfile.next()) return result;
+    const qint64 simfileId = findSimfile.value(0).toLongLong();
+
+    QSqlQuery query(db_);
+    query.prepare("SELECT time_s, thrust_n FROM motor_thrust_samples WHERE simfile_id = ? ORDER BY seq");
+    query.addBindValue(simfileId);
+    query.exec();
+    while (query.next()) {
+        result.push_back({query.value(0).toDouble(), query.value(1).toDouble()});
+    }
+    return result;
 }
 
 }  // namespace apogee::data

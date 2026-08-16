@@ -4,8 +4,18 @@ qt_add_executable(apogee_studio WIN32
     src/main_window.cpp
     src/theme_manager.hpp
     src/theme_manager.cpp
+    src/models/rocket_design.hpp
+    src/models/rocket_design.cpp
+    src/panels/rocket_builder_panel.hpp
+    src/panels/rocket_builder_panel.cpp
+    src/panels/parts_browser_panel.hpp
+    src/panels/parts_browser_panel.cpp
+    src/widgets/rocket_diagram_widget.hpp
+    src/widgets/rocket_diagram_widget.cpp
     resources/themes.qrc
 )
+
+target_include_directories(apogee_studio PRIVATE src)
 
 target_link_libraries(apogee_studio PRIVATE
     rocket_core

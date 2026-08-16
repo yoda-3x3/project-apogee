@@ -27,7 +27,7 @@ TEST_CASE("seedIfEmpty populates components and kits exactly once", "[data][seed
         REQUIRE(query.exec(
             "SELECT c.id FROM components c "
             "JOIN component_nose_cones n ON n.component_id = c.id "
-            "WHERE c.sku = 'PNC-50'"));
+            "WHERE c.sku = 'PNC-50KA'"));
         REQUIRE(query.next());
     }
 

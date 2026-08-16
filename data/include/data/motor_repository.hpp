@@ -1,5 +1,8 @@
 #pragma once
 
+#include <optional>
+
+#include <QVector>
 #include <QtGlobal>
 
 #include "data/thrustcurve_types.hpp"
@@ -24,6 +27,13 @@ public:
     qint64 upsertSimfile(qint64 motorId, const MotorSimfile& simfile);
 
     int motorCount();
+
+    QVector<MotorSummary> listAll();
+    std::optional<MotorSummary> getById(qint64 id);
+
+    // Cached thrust samples for a motor's most recently cached simfile
+    // (there's at most one per motor, since upsertSimfile replaces).
+    QVector<ThrustSample> getCachedSamples(qint64 motorId);
 
 private:
     QSqlDatabase& db_;

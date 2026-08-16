@@ -2,12 +2,14 @@
 
 #include <QString>
 #include <QVector>
+#include <QtGlobal>
 
 namespace apogee::data {
 
 // Mirrors the ThrustCurve.org /api/v1/search.json result shape, field for
 // field (verified live 2026-08-15 against a real "Estes C6" query).
 struct MotorSummary {
+    qint64 id = 0;  // local DB row id -- 0 until upsertMotor()/a repository query populates it
     QString motorId;
     QString manufacturer;
     QString manufacturerAbbrev;

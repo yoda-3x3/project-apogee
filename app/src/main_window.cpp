@@ -1,37 +1,44 @@
 #include "main_window.hpp"
 
 #include <QComboBox>
+#include <QDir>
 #include <QFileDialog>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSplitter>
+#include <QStandardPaths>
 #include <QStatusBar>
+#include <QTabWidget>
 #include <QToolBar>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include "core/version.hpp"
+#include "data/seed_loader.hpp"
 #include "data/version.hpp"
+#include "panels/parts_browser_panel.hpp"
+#include "panels/rocket_builder_panel.hpp"
 
 namespace apogee::app {
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+namespace {
+QString databasePath() {
+    const QString dir = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir().mkpath(dir);
+    return dir + "/apogee.sqlite";
+}
+}  // namespace
+
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), db_(data::Database::open(databasePath())) {
     setWindowTitle("Project Apogee");
     resize(1280, 800);
 
-    auto* central = new QWidget(this);
-    auto* layout = new QVBoxLayout(central);
-    auto* placeholder = new QLabel(
-        "Project Apogee -- model rocket flight simulator\n\n"
-        "Phase 1 scaffold: rocket builder, parts browser, launch-site map,\n"
-        "and telemetry panels arrive in later phases.",
-        central);
-    placeholder->setAlignment(Qt::AlignCenter);
-    layout->addWidget(placeholder);
-    setCentralWidget(central);
+    data::seedIfEmpty(db_.handle());
 
     buildMenusAndToolbar();
+    buildTabs();
 
     statusBar()->showMessage(QString("core %1 | data %2")
                                   .arg(core::version())
@@ -42,8 +49,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
 }
 
 void MainWindow::buildMenusAndToolbar() {
-    auto* viewMenu = menuBar()->addMenu("&View");
-    auto* themeMenu = viewMenu->addMenu("&Theme");
+    viewMenu_ = menuBar()->addMenu("&View");
+    auto* themeMenu = viewMenu_->addMenu("&Theme");
 
     auto* importAction = themeMenu->addAction("&Import Theme...");
     connect(importAction, &QAction::triggered, this, &MainWindow::onImportTheme);
@@ -56,6 +63,38 @@ void MainWindow::buildMenusAndToolbar() {
     toolbar->addWidget(themeCombo_);
     connect(themeCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this,
             &MainWindow::onThemeSelected);
+}
+
+QWidget* MainWindow::buildPlaceholderTab(const QString& message) {
+    auto* widget = new QWidget(this);
+    auto* layout = new QVBoxLayout(widget);
+    auto* label = new QLabel(message, widget);
+    label->setAlignment(Qt::AlignCenter);
+    layout->addWidget(label);
+    return widget;
+}
+
+void MainWindow::buildTabs() {
+    tabs_ = new QTabWidget(this);
+    setCentralWidget(tabs_);
+
+    rocketBuilderPanel_ = new RocketBuilderPanel(db_.handle(), this);
+    partsBrowserPanel_ = new PartsBrowserPanel(db_.handle(), this);
+
+    auto* designSplitter = new QSplitter(Qt::Horizontal, tabs_);
+    designSplitter->addWidget(rocketBuilderPanel_);
+    designSplitter->addWidget(partsBrowserPanel_);
+    designSplitter->setStretchFactor(0, 1);
+    designSplitter->setStretchFactor(1, 1);
+    tabs_->addTab(designSplitter, "Design");
+
+    tabs_->addTab(buildPlaceholderTab("Launch site, satellite map, and live weather arrive in Phase 6."),
+                  "Launch");
+    tabs_->addTab(buildPlaceholderTab("Flight simulation and telemetry charts arrive in Phase 5."),
+                  "Flight");
+
+    connect(partsBrowserPanel_, &PartsBrowserPanel::motorsCached, rocketBuilderPanel_,
+            &RocketBuilderPanel::reloadFromDatabase);
 }
 
 void MainWindow::refreshThemeCombo() {
