@@ -1,22 +1,32 @@
 add_executable(apogee_tests
     ${CMAKE_SOURCE_DIR}/vendor/catch2/catch_amalgamated.cpp
+    main.cpp
     core/test_version.cpp
+    data/test_schema.cpp
+    data/test_seed_loader.cpp
+    data/test_thrustcurve_adapter.cpp
+    data/test_weather_adapters.cpp
 )
 
 target_include_directories(apogee_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/vendor/catch2
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_compile_definitions(apogee_tests PRIVATE
+    APOGEE_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/fixtures"
 )
 
 target_link_libraries(apogee_tests PRIVATE rocket_core rocket_data)
 
-# rocket_data pulls in Qt's -DUNICODE -D_UNICODE compile definitions (needed
-# for Qt's own Win32 API calls). Catch2's amalgamated main() auto-detects
-# that combination and emits a wmain() entry point instead of main() -- which
-# this exact MinGW 13.1.0 toolchain does not resolve to a valid CRT startup,
-# failing with "undefined reference to WinMain" at link time (confirmed via
-# `nm` showing a `wmain` symbol and no `main` in the built object archive).
-# Keep Catch2 on its normal main().
-target_compile_definitions(apogee_tests PRIVATE CATCH_CONFIG_NO_WCHAR)
+# main.cpp supplies its own main() (a QCoreApplication is required for the
+# QSqlDatabase-based data-layer tests -- see main.cpp), superseding
+# catch_amalgamated.cpp's default one. That default main() would otherwise
+# auto-emit a wmain() entry point instead of main() on this toolchain
+# whenever Qt's -DUNICODE/-D_UNICODE defines are present (confirmed via `nm`
+# showing a `wmain` symbol and a "undefined reference to WinMain" link
+# failure) -- CATCH_AMALGAMATED_CUSTOM_MAIN sidesteps that entirely.
+target_compile_definitions(apogee_tests PRIVATE CATCH_AMALGAMATED_CUSTOM_MAIN)
 
 apogee_apply_static_runtime(apogee_tests)
 

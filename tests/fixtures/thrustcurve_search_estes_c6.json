@@ -1,0 +1,50 @@
+{
+  "criteria": [
+    {
+      "name": "manufacturer",
+      "value": "Estes",
+      "matches": 23
+    },
+    {
+      "name": "designation",
+      "value": "C6",
+      "matches": 4
+    },
+    {
+      "name": "maxResults",
+      "value": "5",
+      "matches": 1155
+    }
+  ],
+  "matches": 1,
+  "results": [
+    {
+      "motorId": "5f4294d20002310000000015",
+      "manufacturer": "Estes Industries",
+      "manufacturerAbbrev": "Estes",
+      "designation": "C6",
+      "commonName": "C6",
+      "impulseClass": "C",
+      "diameter": 18,
+      "length": 70,
+      "type": "SU",
+      "certOrg": "National Association of Rocketry",
+      "avgThrustN": 4.74,
+      "maxThrustN": 14.09,
+      "totImpulseNs": 8.82,
+      "burnTimeS": 1.86,
+      "dataFiles": 4,
+      "infoUrl": "http://nar.org/SandT/pdf/Estes/C6.pdf",
+      "totalWeightG": 24.1,
+      "propWeightG": 10.8,
+      "delays": "0,3,5,7",
+      "delayAdjustable": false,
+      "propInfo": "black powder",
+      "sparky": false,
+      "updatedOn": "2019-10-05",
+      "availability": "regular",
+      "source_url": "http://www.thrustcurve.org/motors/Estes/C6/"
+    }
+  ],
+  "source_url": "http://www.thrustcurve.org/motors/search.html"
+}

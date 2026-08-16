@@ -1,0 +1,425 @@
+{
+  "results": [
+    {
+      "motorId": "5f4294d20002310000000015",
+      "simfileId": "69eb2379c7d63000021d8c29",
+      "format": "RASP",
+      "source": "cert",
+      "samples": [
+        {
+          "time": 0.031,
+          "thrust": 0.946
+        },
+        {
+          "time": 0.092,
+          "thrust": 4.826
+        },
+        {
+          "time": 0.139,
+          "thrust": 9.936
+        },
+        {
+          "time": 0.192,
+          "thrust": 14.09
+        },
+        {
+          "time": 0.209,
+          "thrust": 11.446
+        },
+        {
+          "time": 0.231,
+          "thrust": 7.381
+        },
+        {
+          "time": 0.248,
+          "thrust": 6.151
+        },
+        {
+          "time": 0.292,
+          "thrust": 5.489
+        },
+        {
+          "time": 0.37,
+          "thrust": 4.921
+        },
+        {
+          "time": 0.475,
+          "thrust": 4.448
+        },
+        {
+          "time": 0.671,
+          "thrust": 4.258
+        },
+        {
+          "time": 0.702,
+          "thrust": 4.542
+        },
+        {
+          "time": 0.723,
+          "thrust": 4.164
+        },
+        {
+          "time": 0.85,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.063,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.211,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.242,
+          "thrust": 4.069
+        },
+        {
+          "time": 1.303,
+          "thrust": 4.258
+        },
+        {
+          "time": 1.468,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.656,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.821,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.834,
+          "thrust": 2.933
+        },
+        {
+          "time": 1.847,
+          "thrust": 1.325
+        },
+        {
+          "time": 1.86,
+          "thrust": 0
+        }
+      ],
+      "infoUrl": "/simfiles/69eb2379c7d63000021d8c29/",
+      "dataUrl": "/simfiles/69eb2379c7d63000021d8c29/download/data.eng",
+      "source_url": "http://www.thrustcurve.org/simfiles/69eb2379c7d63000021d8c29/"
+    },
+    {
+      "motorId": "5f4294d20002310000000015",
+      "simfileId": "5f4294d20002e90000000833",
+      "format": "RASP",
+      "source": "user",
+      "license": "PD",
+      "samples": [
+        {
+          "time": 0.014,
+          "thrust": 0.633
+        },
+        {
+          "time": 0.026,
+          "thrust": 1.533
+        },
+        {
+          "time": 0.067,
+          "thrust": 2.726
+        },
+        {
+          "time": 0.099,
+          "thrust": 5.136
+        },
+        {
+          "time": 0.15,
+          "thrust": 9.103
+        },
+        {
+          "time": 0.183,
+          "thrust": 11.465
+        },
+        {
+          "time": 0.207,
+          "thrust": 11.635
+        },
+        {
+          "time": 0.219,
+          "thrust": 11.391
+        },
+        {
+          "time": 0.262,
+          "thrust": 6.377
+        },
+        {
+          "time": 0.333,
+          "thrust": 5.014
+        },
+        {
+          "time": 0.349,
+          "thrust": 5.209
+        },
+        {
+          "time": 0.392,
+          "thrust": 4.722
+        },
+        {
+          "time": 0.475,
+          "thrust": 4.771
+        },
+        {
+          "time": 0.653,
+          "thrust": 4.746
+        },
+        {
+          "time": 0.913,
+          "thrust": 4.673
+        },
+        {
+          "time": 1.366,
+          "thrust": 4.625
+        },
+        {
+          "time": 1.607,
+          "thrust": 4.625
+        },
+        {
+          "time": 1.745,
+          "thrust": 4.868
+        },
+        {
+          "time": 1.978,
+          "thrust": 4.795
+        },
+        {
+          "time": 2.023,
+          "thrust": 0.828
+        },
+        {
+          "time": 2.024,
+          "thrust": 0
+        }
+      ],
+      "infoUrl": "/simfiles/5f4294d20002e90000000833/",
+      "dataUrl": "/simfiles/5f4294d20002e90000000833/download/data.eng",
+      "source_url": "http://www.thrustcurve.org/simfiles/5f4294d20002e90000000833/"
+    },
+    {
+      "motorId": "5f4294d20002310000000015",
+      "simfileId": "5f4294d20002e9000000036d",
+      "format": "RockSim",
+      "source": "user",
+      "samples": [
+        {
+          "time": 0,
+          "thrust": 0
+        },
+        {
+          "time": 0.031,
+          "thrust": 0.946
+        },
+        {
+          "time": 0.092,
+          "thrust": 4.826
+        },
+        {
+          "time": 0.139,
+          "thrust": 9.936
+        },
+        {
+          "time": 0.192,
+          "thrust": 14.09
+        },
+        {
+          "time": 0.209,
+          "thrust": 11.446
+        },
+        {
+          "time": 0.231,
+          "thrust": 7.381
+        },
+        {
+          "time": 0.248,
+          "thrust": 6.151
+        },
+        {
+          "time": 0.292,
+          "thrust": 5.489
+        },
+        {
+          "time": 0.37,
+          "thrust": 4.921
+        },
+        {
+          "time": 0.475,
+          "thrust": 4.448
+        },
+        {
+          "time": 0.671,
+          "thrust": 4.258
+        },
+        {
+          "time": 0.702,
+          "thrust": 4.542
+        },
+        {
+          "time": 0.723,
+          "thrust": 4.164
+        },
+        {
+          "time": 0.85,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.063,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.211,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.242,
+          "thrust": 4.069
+        },
+        {
+          "time": 1.303,
+          "thrust": 4.258
+        },
+        {
+          "time": 1.468,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.656,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.821,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.834,
+          "thrust": 2.933
+        },
+        {
+          "time": 1.847,
+          "thrust": 1.325
+        },
+        {
+          "time": 1.86,
+          "thrust": 0
+        }
+      ],
+      "infoUrl": "/simfiles/5f4294d20002e9000000036d/",
+      "dataUrl": "/simfiles/5f4294d20002e9000000036d/download/data.rse",
+      "source_url": "http://www.thrustcurve.org/simfiles/5f4294d20002e9000000036d/"
+    },
+    {
+      "motorId": "5f4294d20002310000000015",
+      "simfileId": "5f4294d20002e900000004e7",
+      "format": "RASP",
+      "source": "user",
+      "samples": [
+        {
+          "time": 0.031,
+          "thrust": 0.946
+        },
+        {
+          "time": 0.092,
+          "thrust": 4.826
+        },
+        {
+          "time": 0.139,
+          "thrust": 9.936
+        },
+        {
+          "time": 0.192,
+          "thrust": 14.09
+        },
+        {
+          "time": 0.209,
+          "thrust": 11.446
+        },
+        {
+          "time": 0.231,
+          "thrust": 7.381
+        },
+        {
+          "time": 0.248,
+          "thrust": 6.151
+        },
+        {
+          "time": 0.292,
+          "thrust": 5.489
+        },
+        {
+          "time": 0.37,
+          "thrust": 4.921
+        },
+        {
+          "time": 0.475,
+          "thrust": 4.448
+        },
+        {
+          "time": 0.671,
+          "thrust": 4.258
+        },
+        {
+          "time": 0.702,
+          "thrust": 4.542
+        },
+        {
+          "time": 0.723,
+          "thrust": 4.164
+        },
+        {
+          "time": 0.85,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.063,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.211,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.242,
+          "thrust": 4.069
+        },
+        {
+          "time": 1.303,
+          "thrust": 4.258
+        },
+        {
+          "time": 1.468,
+          "thrust": 4.353
+        },
+        {
+          "time": 1.656,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.821,
+          "thrust": 4.448
+        },
+        {
+          "time": 1.834,
+          "thrust": 2.933
+        },
+        {
+          "time": 1.847,
+          "thrust": 1.325
+        },
+        {
+          "time": 1.86,
+          "thrust": 0
+        }
+      ],
+      "infoUrl": "/simfiles/5f4294d20002e900000004e7/",
+      "dataUrl": "/simfiles/5f4294d20002e900000004e7/download/data.eng",
+      "source_url": "http://www.thrustcurve.org/simfiles/5f4294d20002e900000004e7/"
+    }
+  ]
+}

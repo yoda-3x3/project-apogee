@@ -1,0 +1,46 @@
+[
+  {
+    "manufacturer": "Estes", "name": "Alpha III", "sku": "EST-2456",
+    "description": "Classic 3-fin beginner kit, 18mm motor, BT-50 body tube.",
+    "components": [
+      { "key": "pnc-50", "quantity": 1, "role": "nose_cone" },
+      { "key": "bt-50", "quantity": 1, "role": "body_tube" },
+      { "key": "fin-50-3", "quantity": 1, "role": "fin_set" },
+      { "key": "mount-18", "quantity": 1, "role": "motor_mount" },
+      { "key": "chute-12", "quantity": 1, "role": "recovery" }
+    ]
+  },
+  {
+    "manufacturer": "Estes", "name": "Wizard", "sku": "EST-1292",
+    "description": "Small 3-fin kit, 18mm motor, BT-20 body tube.",
+    "components": [
+      { "key": "pnc-20", "quantity": 1, "role": "nose_cone" },
+      { "key": "bt-20", "quantity": 1, "role": "body_tube" },
+      { "key": "fin-20-3", "quantity": 1, "role": "fin_set" },
+      { "key": "mount-18", "quantity": 1, "role": "motor_mount" },
+      { "key": "chute-9", "quantity": 1, "role": "recovery" }
+    ]
+  },
+  {
+    "manufacturer": "Estes", "name": "Big Bertha", "sku": "EST-2464",
+    "description": "Classic mid-power kit, 24mm motor, BT-60 body tube, 4 fins.",
+    "components": [
+      { "key": "bnc-60", "quantity": 1, "role": "nose_cone" },
+      { "key": "bt-60", "quantity": 1, "role": "body_tube" },
+      { "key": "fin-60-4", "quantity": 1, "role": "fin_set" },
+      { "key": "mount-24", "quantity": 1, "role": "motor_mount" },
+      { "key": "chute-18", "quantity": 1, "role": "recovery" }
+    ]
+  },
+  {
+    "manufacturer": "Estes", "name": "Ventris", "sku": "EST-7246",
+    "description": "Mid-power 29mm kit, BT-80 body tube, 4 fins.",
+    "components": [
+      { "key": "pnc-80", "quantity": 1, "role": "nose_cone" },
+      { "key": "bt-80", "quantity": 1, "role": "body_tube" },
+      { "key": "fin-80-4", "quantity": 1, "role": "fin_set" },
+      { "key": "mount-29", "quantity": 1, "role": "motor_mount" },
+      { "key": "chute-24", "quantity": 1, "role": "recovery" }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/seed">
+        <file alias="components.json">seed/components.json</file>
+        <file alias="kits.json">seed/kits.json</file>
+    </qresource>
+</RCC>

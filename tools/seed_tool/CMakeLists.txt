@@ -1,0 +1,5 @@
+add_executable(apogee_seed_tool main.cpp)
+target_link_libraries(apogee_seed_tool PRIVATE rocket_core rocket_data Qt6::Core)
+target_compile_features(apogee_seed_tool PUBLIC cxx_std_20)
+apogee_apply_warnings(apogee_seed_tool)
+apogee_apply_static_runtime(apogee_seed_tool)
