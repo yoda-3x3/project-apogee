@@ -1,0 +1,122 @@
+/* Project Apogee -- High Contrast theme (accessibility) */
+
+QWidget {
+    background-color: #000000;
+    color: #ffffff;
+    selection-background-color: #ffff00;
+    selection-color: #000000;
+}
+
+QMainWindow, QDialog {
+    background-color: #000000;
+}
+
+QMenuBar {
+    background-color: #000000;
+    color: #ffffff;
+    border-bottom: 2px solid #ffffff;
+}
+QMenuBar::item:selected {
+    background-color: #ffff00;
+    color: #000000;
+}
+QMenu {
+    background-color: #000000;
+    border: 2px solid #ffffff;
+}
+QMenu::item:selected {
+    background-color: #ffff00;
+    color: #000000;
+}
+
+QToolBar {
+    background-color: #000000;
+    border-bottom: 2px solid #ffffff;
+    spacing: 4px;
+}
+
+QDockWidget {
+    titlebar-close-icon: none;
+    color: #ffffff;
+}
+QDockWidget::title {
+    background-color: #000000;
+    border-bottom: 2px solid #ffffff;
+    padding: 6px;
+}
+
+QPushButton {
+    background-color: #000000;
+    border: 2px solid #ffffff;
+    border-radius: 0px;
+    padding: 5px 12px;
+    color: #ffffff;
+}
+QPushButton:hover {
+    background-color: #ffff00;
+    color: #000000;
+}
+QPushButton:pressed {
+    background-color: #00ff00;
+    color: #000000;
+}
+QPushButton:disabled {
+    color: #808080;
+    border-color: #808080;
+}
+
+QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox, QPlainTextEdit, QTextEdit {
+    background-color: #000000;
+    border: 2px solid #ffffff;
+    border-radius: 0px;
+    padding: 3px;
+    color: #ffffff;
+}
+QComboBox QAbstractItemView {
+    background-color: #000000;
+    selection-background-color: #ffff00;
+    selection-color: #000000;
+}
+
+QTableView, QTreeView, QListView {
+    background-color: #000000;
+    alternate-background-color: #1a1a1a;
+    gridline-color: #ffffff;
+    border: 2px solid #ffffff;
+}
+QHeaderView::section {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 4px;
+    border: 1px solid #ffffff;
+}
+
+QTabWidget::pane {
+    border: 2px solid #ffffff;
+}
+QTabBar::tab {
+    background-color: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    padding: 6px 12px;
+}
+QTabBar::tab:selected {
+    background-color: #ffff00;
+    color: #000000;
+}
+
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: #000000;
+}
+QScrollBar::handle {
+    background: #ffffff;
+}
+QScrollBar::handle:hover {
+    background: #ffff00;
+}
+
+QStatusBar {
+    background-color: #000000;
+    border-top: 2px solid #ffffff;
+    color: #ffffff;
+}

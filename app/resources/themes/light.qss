@@ -1,0 +1,115 @@
+/* Project Apogee -- Light theme */
+
+QWidget {
+    background-color: #f5f6f8;
+    color: #202124;
+    selection-background-color: #1a73e8;
+    selection-color: #ffffff;
+}
+
+QMainWindow, QDialog {
+    background-color: #f5f6f8;
+}
+
+QMenuBar {
+    background-color: #ffffff;
+    color: #202124;
+}
+QMenuBar::item:selected {
+    background-color: #1a73e8;
+    color: #ffffff;
+}
+QMenu {
+    background-color: #ffffff;
+    border: 1px solid #d0d3d8;
+}
+QMenu::item:selected {
+    background-color: #1a73e8;
+    color: #ffffff;
+}
+
+QToolBar {
+    background-color: #ffffff;
+    border: none;
+    spacing: 4px;
+}
+
+QDockWidget {
+    titlebar-close-icon: none;
+    color: #202124;
+}
+QDockWidget::title {
+    background-color: #e8eaed;
+    padding: 6px;
+}
+
+QPushButton {
+    background-color: #ffffff;
+    border: 1px solid #c4c7cc;
+    border-radius: 4px;
+    padding: 5px 12px;
+}
+QPushButton:hover {
+    background-color: #eef2fb;
+    border-color: #1a73e8;
+}
+QPushButton:pressed {
+    background-color: #1a73e8;
+    color: #ffffff;
+}
+QPushButton:disabled {
+    color: #9aa0a6;
+    background-color: #f1f3f4;
+}
+
+QLineEdit, QDoubleSpinBox, QSpinBox, QComboBox, QPlainTextEdit, QTextEdit {
+    background-color: #ffffff;
+    border: 1px solid #c4c7cc;
+    border-radius: 3px;
+    padding: 3px;
+}
+QComboBox QAbstractItemView {
+    background-color: #ffffff;
+    selection-background-color: #1a73e8;
+    selection-color: #ffffff;
+}
+
+QTableView, QTreeView, QListView {
+    background-color: #ffffff;
+    alternate-background-color: #f5f6f8;
+    gridline-color: #d0d3d8;
+    border: 1px solid #d0d3d8;
+}
+QHeaderView::section {
+    background-color: #e8eaed;
+    color: #202124;
+    padding: 4px;
+    border: 1px solid #d0d3d8;
+}
+
+QTabWidget::pane {
+    border: 1px solid #d0d3d8;
+}
+QTabBar::tab {
+    background-color: #e8eaed;
+    padding: 6px 12px;
+}
+QTabBar::tab:selected {
+    background-color: #1a73e8;
+    color: #ffffff;
+}
+
+QScrollBar:vertical, QScrollBar:horizontal {
+    background: #f5f6f8;
+}
+QScrollBar::handle {
+    background: #c4c7cc;
+    border-radius: 4px;
+}
+QScrollBar::handle:hover {
+    background: #1a73e8;
+}
+
+QStatusBar {
+    background-color: #e8eaed;
+}
