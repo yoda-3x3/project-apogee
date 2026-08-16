@@ -1,0 +1,5 @@
+add_executable(apogee_fly_demo main.cpp)
+target_link_libraries(apogee_fly_demo PRIVATE rocket_core)
+target_compile_features(apogee_fly_demo PUBLIC cxx_std_20)
+apogee_apply_warnings(apogee_fly_demo)
+apogee_apply_static_runtime(apogee_fly_demo)

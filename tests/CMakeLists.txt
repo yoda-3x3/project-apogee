@@ -2,6 +2,13 @@ add_executable(apogee_tests
     ${CMAKE_SOURCE_DIR}/vendor/catch2/catch_amalgamated.cpp
     main.cpp
     core/test_version.cpp
+    core/test_quaternion.cpp
+    core/test_rk4_integrator.cpp
+    core/test_atmosphere.cpp
+    core/test_barrowman.cpp
+    core/test_motor_model.cpp
+    core/test_flight_phase.cpp
+    core/test_simulation_end_to_end.cpp
     data/test_schema.cpp
     data/test_seed_loader.cpp
     data/test_thrustcurve_adapter.cpp

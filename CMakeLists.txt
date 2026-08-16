@@ -53,6 +53,7 @@ endif()
 add_subdirectory(core)
 add_subdirectory(data)
 add_subdirectory(tools/seed_tool)
+add_subdirectory(tools/fly_demo)
 
 if(APOGEE_BUILD_GUI)
     add_subdirectory(app)
