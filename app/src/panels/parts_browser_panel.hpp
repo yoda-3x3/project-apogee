@@ -6,6 +6,7 @@
 #include "data/thrustcurve_types.hpp"
 
 class QComboBox;
+class QGroupBox;
 class QLabel;
 class QPushButton;
 class QSqlDatabase;
@@ -14,6 +15,8 @@ class QTableView;
 class QStandardItemModel;
 
 namespace apogee::app {
+
+class ChartWidget;
 
 // Two read-only/reference tables: every seeded component (browse-only --
 // components come from the embedded seed catalog, nothing to fetch), and a
@@ -43,6 +46,8 @@ private:
 
     QSqlDatabase& db_;
 
+    QGroupBox* catalogGroup_ = nullptr;
+    QWidget* catalogContent_ = nullptr;  // filter row + table, hidden when the group is collapsed
     QComboBox* componentManufacturerFilterCombo_ = nullptr;
     QTableView* componentsTable_ = nullptr;
     QStandardItemModel* componentsModel_ = nullptr;
@@ -53,8 +58,12 @@ private:
     QPushButton* cacheMotorButton_ = nullptr;
     QLabel* statusLabel_ = nullptr;
     QLabel* selectedMotorDetailLabel_ = nullptr;
+    ChartWidget* thrustCurveChart_ = nullptr;
 
     QVector<data::MotorSummary> currentModels_;
+
+    void onCatalogToggled(bool expanded);
+    void updateThrustCurveChartFor(const data::MotorSummary& motor);
 };
 
 }  // namespace apogee::app

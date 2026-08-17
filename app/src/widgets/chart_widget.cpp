@@ -32,8 +32,11 @@ constexpr int kMarginTopPx = 28;
 constexpr int kMarginBottomPx = 28;
 }  // namespace
 
-ChartWidget::ChartWidget(QString title, QString yAxisLabel, QWidget* parent)
-    : QWidget(parent), title_(std::move(title)), yAxisLabel_(std::move(yAxisLabel)) {
+ChartWidget::ChartWidget(QString title, QString yAxisLabel, QWidget* parent, QString emptyStateMessage)
+    : QWidget(parent),
+      title_(std::move(title)),
+      yAxisLabel_(std::move(yAxisLabel)),
+      emptyStateMessage_(std::move(emptyStateMessage)) {
     setMinimumHeight(140);
     setMouseTracking(true);
 }
@@ -106,7 +109,7 @@ void ChartWidget::paintEvent(QPaintEvent*) {
 
     if (points_.isEmpty()) {
         painter.setPen(markerColor);
-        painter.drawText(rect(), Qt::AlignCenter, "No flight data yet -- click Fly");
+        painter.drawText(rect(), Qt::AlignCenter, emptyStateMessage_);
         return;
     }
 

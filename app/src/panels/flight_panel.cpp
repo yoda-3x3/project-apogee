@@ -118,9 +118,9 @@ void FlightPanel::buildUi() {
 
     auto* rightColumn = new QWidget(this);
     auto* rightLayout = new QVBoxLayout(rightColumn);
-    altitudeChart_ = new ChartWidget("Altitude AGL", "m", rightColumn);
-    velocityChart_ = new ChartWidget("Velocity", "m/s", rightColumn);
-    accelChart_ = new ChartWidget("Acceleration", "G", rightColumn);
+    altitudeChart_ = new ChartWidget("Altitude AGL", "m", rightColumn, "No flight data yet -- click Fly");
+    velocityChart_ = new ChartWidget("Velocity", "m/s", rightColumn, "No flight data yet -- click Fly");
+    accelChart_ = new ChartWidget("Acceleration", "G", rightColumn, "No flight data yet -- click Fly");
     rightLayout->addWidget(altitudeChart_, 1);
     rightLayout->addWidget(velocityChart_, 1);
     rightLayout->addWidget(accelChart_, 1);

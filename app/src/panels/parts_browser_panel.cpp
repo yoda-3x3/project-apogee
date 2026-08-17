@@ -20,6 +20,7 @@
 #include "data/motor_repository.hpp"
 #include "data/network_http_transport.hpp"
 #include "data/thrustcurve_client.hpp"
+#include "widgets/chart_widget.hpp"
 
 namespace apogee::app {
 
@@ -49,12 +50,23 @@ PartsBrowserPanel::PartsBrowserPanel(QSqlDatabase& db, QWidget* parent) : QWidge
 void PartsBrowserPanel::buildUi() {
     auto* layout = new QVBoxLayout(this);
 
-    auto* catalogGroup = new QGroupBox("Seeded Parts Catalog", this);
-    auto* catalogLayout = new QVBoxLayout(catalogGroup);
+    // Checkable QGroupBox doubles as a collapse toggle: unchecking it hides
+    // catalogContent_ (filter + table) and caps the group's height down to
+    // just its title bar, freeing up vertical space for the motor search
+    // section below -- useful once you're done browsing and want to see the
+    // thrust-curve preview without scrolling.
+    catalogGroup_ = new QGroupBox("Seeded Parts Catalog", this);
+    catalogGroup_->setCheckable(true);
+    catalogGroup_->setChecked(true);
+    auto* catalogGroupLayout = new QVBoxLayout(catalogGroup_);
+
+    catalogContent_ = new QWidget(catalogGroup_);
+    auto* catalogLayout = new QVBoxLayout(catalogContent_);
+    catalogLayout->setContentsMargins(0, 0, 0, 0);
 
     auto* filterRow = new QHBoxLayout();
-    filterRow->addWidget(new QLabel("Manufacturer:", catalogGroup));
-    componentManufacturerFilterCombo_ = new QComboBox(catalogGroup);
+    filterRow->addWidget(new QLabel("Manufacturer:", catalogContent_));
+    componentManufacturerFilterCombo_ = new QComboBox(catalogContent_);
     connect(componentManufacturerFilterCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this,
             &PartsBrowserPanel::onComponentManufacturerFilterChanged);
     filterRow->addWidget(componentManufacturerFilterCombo_, 1);
@@ -66,14 +78,17 @@ void PartsBrowserPanel::buildUi() {
     componentsProxy_->setSourceModel(componentsModel_);
     componentsProxy_->setFilterKeyColumn(1);  // Manufacturer column
 
-    componentsTable_ = new QTableView(catalogGroup);
+    componentsTable_ = new QTableView(catalogContent_);
     componentsTable_->setModel(componentsProxy_);
     componentsTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     componentsTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
     componentsTable_->horizontalHeader()->setStretchLastSection(true);
     componentsTable_->setSortingEnabled(true);
     catalogLayout->addWidget(componentsTable_);
-    layout->addWidget(catalogGroup, 1);
+
+    catalogGroupLayout->addWidget(catalogContent_);
+    connect(catalogGroup_, &QGroupBox::toggled, this, &PartsBrowserPanel::onCatalogToggled);
+    layout->addWidget(catalogGroup_, 1);
 
     auto* searchGroup = new QGroupBox("ThrustCurve.org Motor Search", this);
     auto* searchForm = new QFormLayout(searchGroup);
@@ -102,7 +117,32 @@ void PartsBrowserPanel::buildUi() {
     cacheRow->addWidget(statusLabel_, 1);
     searchForm->addRow(cacheRow);
 
+    thrustCurveChart_ = new ChartWidget("Thrust Curve", "N", searchGroup,
+                                         "Select a cached motor to preview its thrust curve");
+    thrustCurveChart_->setMinimumHeight(120);
+    searchForm->addRow(thrustCurveChart_);
+
     layout->addWidget(searchGroup);
+}
+
+void PartsBrowserPanel::onCatalogToggled(bool expanded) {
+    catalogContent_->setVisible(expanded);
+    catalogGroup_->setMaximumHeight(expanded ? QWIDGETSIZE_MAX : catalogGroup_->sizeHint().height());
+}
+
+void PartsBrowserPanel::updateThrustCurveChartFor(const data::MotorSummary& motor) {
+    data::MotorRepository motorRepo(db_);
+    for (const data::MotorSummary& cached : motorRepo.listAll()) {
+        if (cached.motorId != motor.motorId) continue;
+
+        const QVector<data::ThrustSample> samples = motorRepo.getCachedSamples(cached.id);
+        QVector<QPointF> points;
+        points.reserve(samples.size());
+        for (const data::ThrustSample& s : samples) points.push_back(QPointF(s.timeS, s.thrustN));
+        thrustCurveChart_->setData(points, {});
+        return;
+    }
+    thrustCurveChart_->setData({}, {});  // not cached (yet) -- falls back to the empty-state message
 }
 
 void PartsBrowserPanel::reloadComponentsTable() {
@@ -172,6 +212,7 @@ void PartsBrowserPanel::onManufacturerChanged() {
     modelCombo_->setEnabled(false);
     selectedMotorDetailLabel_->clear();
     cacheMotorButton_->setEnabled(false);
+    thrustCurveChart_->setData({}, {});
     currentModels_.clear();
 
     const QString abbrev = manufacturerCombo_->currentData().toString();
@@ -202,11 +243,13 @@ void PartsBrowserPanel::onModelChanged() {
     if (index < 0 || index >= currentModels_.size()) {
         selectedMotorDetailLabel_->clear();
         cacheMotorButton_->setEnabled(false);
+        thrustCurveChart_->setData({}, {});
         return;
     }
 
     selectedMotorDetailLabel_->setText(formatMotorDetail(currentModels_[index]));
     cacheMotorButton_->setEnabled(true);
+    updateThrustCurveChartFor(currentModels_[index]);  // shows the curve if already cached
 }
 
 void PartsBrowserPanel::onCacheMotorClicked() {
@@ -232,6 +275,7 @@ void PartsBrowserPanel::onCacheMotorClicked() {
                                    .arg(motor.manufacturer, motor.designation));
     }
 
+    updateThrustCurveChartFor(motor);
     emit motorsCached();
 }
 

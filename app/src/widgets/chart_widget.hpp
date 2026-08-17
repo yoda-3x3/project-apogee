@@ -26,7 +26,8 @@ struct PhaseMarker {
 class ChartWidget : public QWidget {
     Q_OBJECT
 public:
-    ChartWidget(QString title, QString yAxisLabel, QWidget* parent = nullptr);
+    ChartWidget(QString title, QString yAxisLabel, QWidget* parent = nullptr,
+                QString emptyStateMessage = "No data yet");
 
     // Replaces the plotted series and phase markers; pass empty vectors to
     // clear back to the "no data yet" placeholder state.
@@ -44,6 +45,7 @@ private:
 
     QString title_;
     QString yAxisLabel_;
+    QString emptyStateMessage_;
     QVector<QPointF> points_;
     QVector<PhaseMarker> markers_;
     double minY_ = 0;
