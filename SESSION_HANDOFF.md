@@ -31,45 +31,51 @@ committed and pushed after the user confirms.
    Open-Meteo clients
 3. ✅ 6DOF physics core (`core/`): Vec3/Quaternion/RK4, Barrowman, motor
    model, flight-phase state machine, `Simulation::run`
-4. ✅ Rocket builder UI — **just finished this session**, see below
-5. ⬜ Simulation + telemetry/chart UI (next up)
-6. ⬜ Map + launch-site + live weather integration
+4. ✅ Rocket builder UI
+5. ✅ Simulation + telemetry/chart UI — **just finished this session**, see below
+6. ⬜ Map + launch-site + live weather integration (next up)
 7. ⬜ 3D trajectory view + save/load + installer polish
 
-## What just happened this session (all committed + pushed)
+## What just happened this session (all committed; push pending user confirmation)
 
-- Phase 4 core: `RocketDesign` model (auto-stacks parts into a
-  `core::RocketDefinition`, live CG/CP/stability), `RocketDiagramWidget`
-  (2D side-profile), `RocketBuilderPanel` (per-slot combos + "Load Kit"),
-  `PartsBrowserPanel` (catalog browser + ThrustCurve motor search).
-- Restructured `MainWindow` around mode tabs (**Design** / **Launch** /
-  **Flight**) instead of dock widgets, per user request — Launch and
-  Flight are placeholder tabs until Phases 5–6 fill them in.
-- **Seed catalog completely replaced**: imported real parts from every
-  manufacturer file in the
-  [OpenRocket component database](https://github.com/openrocket/openrocket-database)
-  (Apache 2.0) — 2,376 real body tubes/nose cones/transitions/parachutes/
-  streamers across 15 manufacturers, masses computed from real geometry +
-  material density where not explicitly given. Fin sets and motor mounts
-  are still hand-estimated (confirmed absent as a standalone part in the
-  source data, not just for Estes). See `data/seed/README.md` for full
-  attribution/sourcing detail.
-- Motor search UI is now cascading Manufacturer → Model dropdowns (real
-  ThrustCurve.org metadata), not free-text fields.
-- App icon: hand-drawn rocket `.ico`, embedded in the exe via a Windows
-  `.rc` resource (`app/resources/app_icon.ico` / `.rc`).
-- A **portable standalone build** exists at `C:\Users\reach\Dance\project_apogee\dist\`
-  (exe + Qt DLLs + plugin folders, deliberately **no** `qt.conf`, so it's
-  genuinely relocatable — see gotcha below). Desktop and Start Menu
-  shortcuts ("Project Apogee") already point at it. **Taskbar pinning
-  needs one manual step**: Windows blocks programmatic taskbar pinning
-  since 10 1809+ (Access Denied even via Shell COM automation) — right-click
-  either shortcut and choose "Pin to taskbar" yourself.
-- ⚠️ **`dist/` is a manual snapshot, not auto-updated.** After any further
-  build, refresh it: copy `build\apogee_studio.exe` + `build\*.dll` +
-  the plugin subfolders (`generic iconengines imageformats
-  networkinformation platforms sqldrivers styles tls`) into `dist\`,
-  **excluding `qt.conf`** (see next section for why).
+- **Phase 5**: `SimulationWorker` (`app/src/workers/`, `QThread` subclass
+  wrapping `core::Simulation::run`; result read via `result()` after
+  `QThread`'s own `finished()` signal rather than a custom signal carrying
+  `Telemetry` by value — that fought with moc over metatype-registration
+  ordering, see the comment in `simulation_worker.hpp`), a hand-rolled
+  `ChartWidget` (`app/src/widgets/`, plain `QPainter`, no QtCharts — palette
+  driven so it stays correct across all four themes, dashed flight-phase
+  markers, hover tooltip), and `FlightPanel` (`app/src/panels/`) wired into
+  the Flight tab: launch-condition inputs (rail length/angle, ground
+  wind — Phase 6 will replace wind with live weather, ejection delay), a
+  Fly button, three charts (altitude/velocity/acceleration-G) with phase
+  markers, and a summary-stats readout matching `core::SummaryStats`.
+- **Found + fixed a real bug while verifying the above**: the running
+  app's *actual* AppData database still had the original ~24-part
+  hand-curated catalog, not the 2,383-part/14-manufacturer OpenRocket
+  import from last session — `seedIfEmpty()`'s `componentCount() > 0`
+  guard meant any database that existed before the catalog replacement
+  would never pick up the new seed data. Fixed by adding a `seed_meta`
+  table + `kSeedVersion` constant; renamed to `seedIfNeeded()`, which now
+  wipes and reloads components/kits (leaving cached ThrustCurve motor data
+  alone) whenever the stored version doesn't match. Verified against a
+  copy of the real GUI database via `apogee_seed_tool`, not just a fresh
+  `:memory:` test db. Bump `kSeedVersion` in `data/src/seed_loader.cpp`
+  next time `components.json`/`kits.json` changes meaningfully.
+- Also added a **Manufacturer filter** (`QSortFilterProxyModel`) to
+  `PartsBrowserPanel`'s Seeded Parts Catalog table, since the plain table
+  was sorted by part type with no way to browse by brand — the user's
+  original ask that led to finding the seeding bug above.
+- ⚠️ **Native-window UI automation is unreliable in this sandbox**,
+  worse than previously noted: a click aimed at the app's Flight tab
+  landed on an unrelated Chrome tab instead, and `SetForegroundWindow`
+  didn't reliably bring the app window into a desktop screenshot either.
+  The Flight tab's Fly → charts flow is implementation-verified (clean
+  build, all Catch2 tests green, correct wiring read back file-by-file)
+  and the seeding fix is verified against real persisted data, but the
+  interactive click-through was **not** visually confirmed this session.
+  Worth an actual manual click-through next session before relying on it
+  further.
 
 ## Real bugs found & fixed this project (worth knowing about)
 
@@ -99,27 +105,41 @@ committed and pushed after the user confirms.
   the two independent hand-derivations that pinned down the correct sign.
 - `MainWindow` opened the DB but forgot to call `seedIfEmpty()` — caught
   via actually launching the GUI and seeing an empty parts catalog, not
-  via compiling.
+  via compiling. (That function is now `seedIfNeeded()` — see this
+  session's entry above for the follow-up bug this one had.)
+- A **portable standalone build** exists at
+  `C:\Users\reach\Dance\project_apogee\dist\` (exe + Qt DLLs + plugin
+  folders, deliberately **no** `qt.conf` — see the bullet above for why —
+  so it's genuinely relocatable). Desktop and Start Menu shortcuts
+  ("Project Apogee") point at it; taskbar pinning needs one manual step
+  (Windows blocks programmatic pinning since 10 1809+ — right-click a
+  shortcut and choose "Pin to taskbar"). ⚠️ **`dist\` is a manual
+  snapshot, not auto-updated** — after any build, refresh it by copying
+  `build\apogee_studio.exe` + `build\*.dll` + the plugin subfolders
+  (`generic iconengines imageformats networkinformation platforms
+  sqldrivers styles tls`) into `dist\`, excluding `qt.conf`. (Not
+  refreshed this session — Phase 5's build is only in `build\` so far.)
 
 ## Known follow-ups / not yet done
 
-- RocketBuilderPanel's part-slot combo boxes now have hundreds of entries
-  per type (e.g. 765 nose cones) since the catalog import — functional
-  (Qt combos support type-ahead search) but a searchable/filterable
-  picker would be a nicer UX; not done, flagging for whenever it matters.
-- No screenshot-based UI verification is fully reliable in this sandbox —
-  clicks/screenshots sometimes land on the host Claude Code window
-  instead of the target app. When re-verifying UI changes, prefer: (a)
-  registry/QSettings pre-seeding + fresh launch + one screenshot, over
-  (b) multi-step click sequences, which are flaky here.
-- Phase 5 is next: `SimulationWorker` (QThread wrapper around
-  `core::Simulation::run`), hand-rolled `ChartWidget` (QPainter, no
-  QtCharts dependency), phase-marker overlays, summary stats panel, wired
-  into the Flight tab.
+- RocketBuilderPanel's (Design tab) part-slot combo boxes still have
+  hundreds of entries per type (e.g. 765 nose cones) with no filter — Qt
+  combos support type-ahead search so it's functional, but a
+  searchable/filterable picker would be nicer. PartsBrowserPanel's
+  read-only catalog table got a manufacturer filter this session; the
+  Design tab's actual selection combos did not.
+- Native-window UI automation (clicks, screenshots, `SetForegroundWindow`)
+  is unreliable in this sandbox — see this session's entry above. When
+  re-verifying UI changes, prefer non-visual checks against the real data
+  (headless tool output, DB inspection) over interactive click sequences
+  where possible; a manual click-through by the user is worth doing for
+  anything not covered that way.
+- Phase 5's Flight tab (Fly → charts → summary stats) has not had an
+  actual interactive click-through yet — worth doing early next session.
 
 ## How to resume
 
-Just say "cleared for phase 5" (or whatever's next) and go — the assistant
+Just say "cleared for phase 6" (or whatever's next) and go — the assistant
 should re-read this file's context, confirm the build's still green
 (`.\build.ps1 -BuildGui`), and continue from there. Always confirm with the
 user before `git push` (standing instruction), and test before pushing.

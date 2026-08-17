@@ -9,6 +9,7 @@ class QComboBox;
 class QLabel;
 class QPushButton;
 class QSqlDatabase;
+class QSortFilterProxyModel;
 class QTableView;
 class QStandardItemModel;
 
@@ -33,6 +34,7 @@ private slots:
     void onManufacturerChanged();
     void onModelChanged();
     void onCacheMotorClicked();
+    void onComponentManufacturerFilterChanged();
 
 private:
     void buildUi();
@@ -41,8 +43,10 @@ private:
 
     QSqlDatabase& db_;
 
+    QComboBox* componentManufacturerFilterCombo_ = nullptr;
     QTableView* componentsTable_ = nullptr;
     QStandardItemModel* componentsModel_ = nullptr;
+    QSortFilterProxyModel* componentsProxy_ = nullptr;
 
     QComboBox* manufacturerCombo_ = nullptr;
     QComboBox* modelCombo_ = nullptr;

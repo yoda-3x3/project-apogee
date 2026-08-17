@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    seedIfEmpty(db.handle());
+    seedIfNeeded(db.handle());
 
     ComponentRepository components(db.handle());
     KitRepository kits(db.handle());

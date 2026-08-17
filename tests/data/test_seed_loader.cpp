@@ -9,10 +9,10 @@
 
 using namespace apogee::data;
 
-TEST_CASE("seedIfEmpty populates components and kits exactly once", "[data][seed]") {
+TEST_CASE("seedIfNeeded populates components and kits", "[data][seed]") {
     Database db = Database::open(":memory:");
 
-    seedIfEmpty(db.handle());
+    seedIfNeeded(db.handle());
 
     ComponentRepository components(db.handle());
     KitRepository kits(db.handle());
@@ -42,9 +42,43 @@ TEST_CASE("seedIfEmpty populates components and kits exactly once", "[data][seed
         REQUIRE(query.value(0).toInt() == 5);  // Alpha III: nose, tube, fins, mount, chute
     }
 
-    SECTION("re-seeding an already-populated database is a no-op") {
-        seedIfEmpty(db.handle());
+    SECTION("re-seeding an already-current database is a no-op") {
+        seedIfNeeded(db.handle());
         REQUIRE(components.componentCount() == componentCountAfterFirstSeed);
         REQUIRE(kits.kitCount() == kitCountAfterFirstSeed);
+    }
+
+    SECTION("a database seeded by an older catalog version gets wiped and reseeded") {
+        // Simulate an install that was seeded before the embedded seed data
+        // changed (see seed_loader.cpp's kSeedVersion comment) -- e.g. the
+        // OpenRocket catalog import that replaced the original ~25-part
+        // hand-curated set. A plain "componentCount() > 0" guard would leave
+        // this database stuck on the stale data forever.
+        QSqlQuery downgrade(db.handle());
+        REQUIRE(downgrade.exec("UPDATE seed_meta SET value = '1' WHERE key = 'seed_version'"));
+        REQUIRE(downgrade.exec("DELETE FROM kit_components"));
+        REQUIRE(downgrade.exec("DELETE FROM kits"));
+        REQUIRE(downgrade.exec("DELETE FROM component_nose_cones WHERE component_id NOT IN "
+                                "(SELECT id FROM components LIMIT 1)"));
+        REQUIRE(downgrade.exec("DELETE FROM components WHERE id NOT IN "
+                                "(SELECT id FROM components LIMIT 1)"));
+        REQUIRE(components.componentCount() < componentCountAfterFirstSeed);
+
+        // A motor the user cached from ThrustCurve.org, unrelated to the
+        // seed JSON, must survive the reseed.
+        QSqlQuery insertMotor(db.handle());
+        REQUIRE(insertMotor.exec(
+            "INSERT INTO motors (thrustcurve_motor_id, manufacturer, designation, cached_at) "
+            "VALUES ('test-motor-1', 'Estes', 'C6', '2026-01-01')"));
+
+        seedIfNeeded(db.handle());
+
+        REQUIRE(components.componentCount() == componentCountAfterFirstSeed);
+        REQUIRE(kits.kitCount() == kitCountAfterFirstSeed);
+
+        QSqlQuery motorCheck(db.handle());
+        REQUIRE(motorCheck.exec("SELECT COUNT(*) FROM motors WHERE thrustcurve_motor_id = 'test-motor-1'"));
+        motorCheck.next();
+        REQUIRE(motorCheck.value(0).toInt() == 1);
     }
 }

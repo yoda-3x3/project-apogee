@@ -89,6 +89,9 @@ const QStringList kStatements = {
         kit_id INTEGER REFERENCES kits(id), component_id INTEGER REFERENCES components(id),
         quantity INTEGER DEFAULT 1, role TEXT
     ))",
+    R"(CREATE TABLE IF NOT EXISTS seed_meta (
+        key TEXT PRIMARY KEY, value TEXT
+    ))",
 };
 // clang-format on
 

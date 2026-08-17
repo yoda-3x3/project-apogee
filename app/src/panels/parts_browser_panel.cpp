@@ -7,8 +7,12 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QPushButton>
+#include <QRegularExpression>
+#include <QSet>
+#include <QSortFilterProxyModel>
 #include <QSqlDatabase>
 #include <QStandardItemModel>
+#include <QStringList>
 #include <QTableView>
 #include <QVBoxLayout>
 
@@ -47,10 +51,23 @@ void PartsBrowserPanel::buildUi() {
 
     auto* catalogGroup = new QGroupBox("Seeded Parts Catalog", this);
     auto* catalogLayout = new QVBoxLayout(catalogGroup);
+
+    auto* filterRow = new QHBoxLayout();
+    filterRow->addWidget(new QLabel("Manufacturer:", catalogGroup));
+    componentManufacturerFilterCombo_ = new QComboBox(catalogGroup);
+    connect(componentManufacturerFilterCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            &PartsBrowserPanel::onComponentManufacturerFilterChanged);
+    filterRow->addWidget(componentManufacturerFilterCombo_, 1);
+    catalogLayout->addLayout(filterRow);
+
     componentsModel_ = new QStandardItemModel(0, 5, this);
     componentsModel_->setHorizontalHeaderLabels({"Type", "Manufacturer", "Name", "SKU", "Mass (g)"});
+    componentsProxy_ = new QSortFilterProxyModel(this);
+    componentsProxy_->setSourceModel(componentsModel_);
+    componentsProxy_->setFilterKeyColumn(1);  // Manufacturer column
+
     componentsTable_ = new QTableView(catalogGroup);
-    componentsTable_->setModel(componentsModel_);
+    componentsTable_->setModel(componentsProxy_);
     componentsTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
     componentsTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
     componentsTable_->horizontalHeader()->setStretchLastSection(true);
@@ -94,6 +111,7 @@ void PartsBrowserPanel::reloadComponentsTable() {
 
     componentsModel_->removeRows(0, componentsModel_->rowCount());
     componentsModel_->setRowCount(static_cast<int>(all.size()));
+    QSet<QString> manufacturers;
     for (int row = 0; row < all.size(); ++row) {
         const data::ComponentSummary& s = all[row].summary;
         componentsModel_->setItem(row, 0, new QStandardItem(s.type));
@@ -101,6 +119,33 @@ void PartsBrowserPanel::reloadComponentsTable() {
         componentsModel_->setItem(row, 2, new QStandardItem(s.name));
         componentsModel_->setItem(row, 3, new QStandardItem(s.sku));
         componentsModel_->setItem(row, 4, new QStandardItem(QString::number(s.massG, 'f', 1)));
+        manufacturers.insert(s.manufacturer);
+    }
+
+    QStringList sortedManufacturers(manufacturers.begin(), manufacturers.end());
+    sortedManufacturers.sort(Qt::CaseInsensitive);
+
+    const QString previousSelection = componentManufacturerFilterCombo_->currentData().toString();
+    const QSignalBlocker blocker(componentManufacturerFilterCombo_);
+    componentManufacturerFilterCombo_->clear();
+    componentManufacturerFilterCombo_->addItem(QString("(all manufacturers -- %1 parts)").arg(all.size()),
+                                                QString());
+    for (const QString& manufacturer : sortedManufacturers) {
+        componentManufacturerFilterCombo_->addItem(manufacturer, manufacturer);
+    }
+    const int restoredIndex = componentManufacturerFilterCombo_->findData(previousSelection);
+    componentManufacturerFilterCombo_->setCurrentIndex(restoredIndex >= 0 ? restoredIndex : 0);
+
+    onComponentManufacturerFilterChanged();
+}
+
+void PartsBrowserPanel::onComponentManufacturerFilterChanged() {
+    const QString manufacturer = componentManufacturerFilterCombo_->currentData().toString();
+    if (manufacturer.isEmpty()) {
+        componentsProxy_->setFilterRegularExpression(QRegularExpression());
+    } else {
+        componentsProxy_->setFilterRegularExpression(
+            QRegularExpression(QRegularExpression::anchoredPattern(QRegularExpression::escape(manufacturer))));
     }
 }
 
