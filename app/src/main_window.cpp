@@ -18,6 +18,7 @@
 #include "core/version.hpp"
 #include "data/seed_loader.hpp"
 #include "data/version.hpp"
+#include "panels/flight_panel.hpp"
 #include "panels/parts_browser_panel.hpp"
 #include "panels/rocket_builder_panel.hpp"
 
@@ -35,7 +36,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), db_(data::Databas
     setWindowTitle("Project Apogee");
     resize(1280, 800);
 
-    data::seedIfEmpty(db_.handle());
+    data::seedIfNeeded(db_.handle());
 
     buildMenusAndToolbar();
     buildTabs();
@@ -90,8 +91,9 @@ void MainWindow::buildTabs() {
 
     tabs_->addTab(buildPlaceholderTab("Launch site, satellite map, and live weather arrive in Phase 6."),
                   "Launch");
-    tabs_->addTab(buildPlaceholderTab("Flight simulation and telemetry charts arrive in Phase 5."),
-                  "Flight");
+
+    flightPanel_ = new FlightPanel(db_.handle(), rocketBuilderPanel_->design(), tabs_);
+    tabs_->addTab(flightPanel_, "Flight");
 
     connect(partsBrowserPanel_, &PartsBrowserPanel::motorsCached, rocketBuilderPanel_,
             &RocketBuilderPanel::reloadFromDatabase);

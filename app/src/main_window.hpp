@@ -13,6 +13,7 @@ namespace apogee::app {
 
 class RocketBuilderPanel;
 class PartsBrowserPanel;
+class FlightPanel;
 
 // Top-level layout is mode tabs (Design / Launch / Flight), not a flat pile
 // of dock widgets -- each phase adds panels within the tab for the mode
@@ -42,6 +43,7 @@ private:
     QTabWidget* tabs_ = nullptr;
     RocketBuilderPanel* rocketBuilderPanel_ = nullptr;
     PartsBrowserPanel* partsBrowserPanel_ = nullptr;
+    FlightPanel* flightPanel_ = nullptr;
 };
 
 }  // namespace apogee::app

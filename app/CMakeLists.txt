@@ -10,8 +10,14 @@ qt_add_executable(apogee_studio WIN32
     src/panels/rocket_builder_panel.cpp
     src/panels/parts_browser_panel.hpp
     src/panels/parts_browser_panel.cpp
+    src/panels/flight_panel.hpp
+    src/panels/flight_panel.cpp
     src/widgets/rocket_diagram_widget.hpp
     src/widgets/rocket_diagram_widget.cpp
+    src/widgets/chart_widget.hpp
+    src/widgets/chart_widget.cpp
+    src/workers/simulation_worker.hpp
+    src/workers/simulation_worker.cpp
     resources/themes.qrc
     resources/app_icon.rc
 )
