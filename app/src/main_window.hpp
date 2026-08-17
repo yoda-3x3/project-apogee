@@ -13,13 +13,13 @@ namespace apogee::app {
 
 class RocketBuilderPanel;
 class PartsBrowserPanel;
+class LaunchSitePanel;
 class FlightPanel;
 
 // Top-level layout is mode tabs (Design / Launch / Flight), not a flat pile
 // of dock widgets -- each phase adds panels within the tab for the mode
 // they belong to, so the window stays navigable as more panels arrive
-// (Launch gets the map + weather panel in Phase 6, Flight gets telemetry
-// charts in Phase 5 and the 3D trajectory view in Phase 7).
+// (the Flight tab still gets a 3D trajectory view in Phase 7).
 class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
@@ -33,7 +33,6 @@ private:
     void buildMenusAndToolbar();
     void refreshThemeCombo();
     void buildTabs();
-    QWidget* buildPlaceholderTab(const QString& message);
 
     ThemeManager themeManager_;
     QComboBox* themeCombo_ = nullptr;
@@ -43,6 +42,7 @@ private:
     QTabWidget* tabs_ = nullptr;
     RocketBuilderPanel* rocketBuilderPanel_ = nullptr;
     PartsBrowserPanel* partsBrowserPanel_ = nullptr;
+    LaunchSitePanel* launchSitePanel_ = nullptr;
     FlightPanel* flightPanel_ = nullptr;
 };
 

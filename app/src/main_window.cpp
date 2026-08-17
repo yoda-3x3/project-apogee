@@ -12,13 +12,13 @@
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QToolBar>
-#include <QVBoxLayout>
 #include <QWidget>
 
 #include "core/version.hpp"
 #include "data/seed_loader.hpp"
 #include "data/version.hpp"
 #include "panels/flight_panel.hpp"
+#include "panels/launch_site_panel.hpp"
 #include "panels/parts_browser_panel.hpp"
 #include "panels/rocket_builder_panel.hpp"
 
@@ -66,15 +66,6 @@ void MainWindow::buildMenusAndToolbar() {
             &MainWindow::onThemeSelected);
 }
 
-QWidget* MainWindow::buildPlaceholderTab(const QString& message) {
-    auto* widget = new QWidget(this);
-    auto* layout = new QVBoxLayout(widget);
-    auto* label = new QLabel(message, widget);
-    label->setAlignment(Qt::AlignCenter);
-    layout->addWidget(label);
-    return widget;
-}
-
 void MainWindow::buildTabs() {
     tabs_ = new QTabWidget(this);
     setCentralWidget(tabs_);
@@ -89,14 +80,16 @@ void MainWindow::buildTabs() {
     designSplitter->setStretchFactor(1, 1);
     tabs_->addTab(designSplitter, "Design");
 
-    tabs_->addTab(buildPlaceholderTab("Launch site, satellite map, and live weather arrive in Phase 6."),
-                  "Launch");
+    launchSitePanel_ = new LaunchSitePanel(tabs_);
+    tabs_->addTab(launchSitePanel_, "Launch");
 
-    flightPanel_ = new FlightPanel(db_.handle(), rocketBuilderPanel_->design(), tabs_);
+    flightPanel_ =
+        new FlightPanel(db_.handle(), rocketBuilderPanel_->design(), launchSitePanel_->launchSite(), tabs_);
     tabs_->addTab(flightPanel_, "Flight");
 
     connect(partsBrowserPanel_, &PartsBrowserPanel::motorsCached, rocketBuilderPanel_,
             &RocketBuilderPanel::reloadFromDatabase);
+    connect(flightPanel_, &FlightPanel::flightCompleted, launchSitePanel_, &LaunchSitePanel::onFlightCompleted);
 }
 
 void MainWindow::refreshThemeCombo() {

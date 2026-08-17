@@ -12,24 +12,30 @@ class QLabel;
 namespace apogee::app {
 
 class RocketDesign;
+class LaunchSite;
 class ChartWidget;
 class SimulationWorker;
 
-// The Flight tab: launch-condition inputs (rail length/angle, ground wind,
-// ejection delay -- Phase 6 will replace the wind fields with live
-// weather), a "Fly" button that runs the current Design-tab rocket through
-// core::Simulation on a background thread, three ChartWidgets (altitude,
-// velocity, acceleration-G) with phase markers, and a summary-stats
-// readout.
+// The Flight tab: an ejection-delay input, a "Fly" button that runs the
+// current Design-tab rocket through core::Simulation on a background
+// thread using the current Launch-tab site/rail/wind (LaunchSite, shared
+// with LaunchSitePanel), three ChartWidgets (altitude, velocity,
+// acceleration-G) with phase markers, and a summary-stats readout.
 class FlightPanel : public QWidget {
     Q_OBJECT
 public:
-    FlightPanel(QSqlDatabase& db, RocketDesign& design, QWidget* parent = nullptr);
+    FlightPanel(QSqlDatabase& db, RocketDesign& design, LaunchSite& launchSite, QWidget* parent = nullptr);
     ~FlightPanel() override;
+
+signals:
+    // Emitted after a flight, so LaunchSitePanel can drop a landing marker
+    // on the map. ENU meters, matching core::SummaryStats::landingOffsetM.
+    void flightCompleted(double landingOffsetEastM, double landingOffsetNorthM);
 
 private slots:
     void onFlyClicked();
     void onSimulationFinished();
+    void refreshLaunchSiteSummary();
 
 private:
     void buildUi();
@@ -37,12 +43,10 @@ private:
 
     QSqlDatabase& db_;
     RocketDesign& design_;
+    LaunchSite& launchSite_;
     SimulationWorker* worker_ = nullptr;
 
-    QDoubleSpinBox* railLengthSpin_ = nullptr;
-    QDoubleSpinBox* railAngleSpin_ = nullptr;
-    QDoubleSpinBox* windSpeedSpin_ = nullptr;
-    QDoubleSpinBox* windDirectionSpin_ = nullptr;
+    QLabel* launchSiteSummaryLabel_ = nullptr;
     QDoubleSpinBox* ejectionDelaySpin_ = nullptr;
     QPushButton* flyButton_ = nullptr;
     QLabel* statusLabel_ = nullptr;

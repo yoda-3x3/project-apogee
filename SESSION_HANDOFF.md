@@ -32,50 +32,50 @@ committed and pushed after the user confirms.
 3. ✅ 6DOF physics core (`core/`): Vec3/Quaternion/RK4, Barrowman, motor
    model, flight-phase state machine, `Simulation::run`
 4. ✅ Rocket builder UI
-5. ✅ Simulation + telemetry/chart UI — **just finished this session**, see below
-6. ⬜ Map + launch-site + live weather integration (next up)
-7. ⬜ 3D trajectory view + save/load + installer polish
+5. ✅ Simulation + telemetry/chart UI — user click-tested and confirmed working
+6. ✅ Map + launch-site + live weather integration — **just finished this
+   session**, see below; user click-tested and confirmed working
+7. ⬜ 3D trajectory view + save/load + installer polish (next up)
 
 ## What just happened this session (all committed; push pending user confirmation)
 
-- **Phase 5**: `SimulationWorker` (`app/src/workers/`, `QThread` subclass
-  wrapping `core::Simulation::run`; result read via `result()` after
-  `QThread`'s own `finished()` signal rather than a custom signal carrying
-  `Telemetry` by value — that fought with moc over metatype-registration
-  ordering, see the comment in `simulation_worker.hpp`), a hand-rolled
-  `ChartWidget` (`app/src/widgets/`, plain `QPainter`, no QtCharts — palette
-  driven so it stays correct across all four themes, dashed flight-phase
-  markers, hover tooltip), and `FlightPanel` (`app/src/panels/`) wired into
-  the Flight tab: launch-condition inputs (rail length/angle, ground
-  wind — Phase 6 will replace wind with live weather, ejection delay), a
-  Fly button, three charts (altitude/velocity/acceleration-G) with phase
-  markers, and a summary-stats readout matching `core::SummaryStats`.
-- **Found + fixed a real bug while verifying the above**: the running
-  app's *actual* AppData database still had the original ~24-part
-  hand-curated catalog, not the 2,383-part/14-manufacturer OpenRocket
-  import from last session — `seedIfEmpty()`'s `componentCount() > 0`
-  guard meant any database that existed before the catalog replacement
-  would never pick up the new seed data. Fixed by adding a `seed_meta`
-  table + `kSeedVersion` constant; renamed to `seedIfNeeded()`, which now
-  wipes and reloads components/kits (leaving cached ThrustCurve motor data
-  alone) whenever the stored version doesn't match. Verified against a
-  copy of the real GUI database via `apogee_seed_tool`, not just a fresh
-  `:memory:` test db. Bump `kSeedVersion` in `data/src/seed_loader.cpp`
-  next time `components.json`/`kits.json` changes meaningfully.
-- Also added a **Manufacturer filter** (`QSortFilterProxyModel`) to
-  `PartsBrowserPanel`'s Seeded Parts Catalog table, since the plain table
-  was sorted by part type with no way to browse by brand — the user's
-  original ask that led to finding the seeding bug above.
-- ⚠️ **Native-window UI automation is unreliable in this sandbox**,
-  worse than previously noted: a click aimed at the app's Flight tab
-  landed on an unrelated Chrome tab instead, and `SetForegroundWindow`
-  didn't reliably bring the app window into a desktop screenshot either.
-  The Flight tab's Fly → charts flow is implementation-verified (clean
-  build, all Catch2 tests green, correct wiring read back file-by-file)
-  and the seeding fix is verified against real persisted data, but the
-  interactive click-through was **not** visually confirmed this session.
-  Worth an actual manual click-through next session before relying on it
-  further.
+- **Phase 6**: `LaunchSite` (`app/src/models/`, mirrors the `RocketDesign`
+  pattern) is the shared model for coordinates/elevation/rail geometry/
+  manual-vs-live wind, owned by the new `LaunchSitePanel` and read by
+  `FlightPanel` (which took a `LaunchSite&` constructor param, dropping its
+  own rail/wind spin boxes from Phase 5). `MapTileWidget`
+  (`app/src/widgets/`) is a hand-rolled slippy map on a `QGraphicsView` +
+  `QGraphicsScene`: Esri World Imagery XYZ tiles placed directly at their
+  Web Mercator pixel coordinates (so panning is just normal scrolling, no
+  manual re-centering math), manual drag-to-pan/click-to-set-marker (had
+  to hand-roll this instead of `ScrollHandDrag` to distinguish a click
+  from a drag), wheel zoom, `QNetworkDiskCache` for on-disk tile caching.
+  `LaunchSitePanel` wires the map to lat/lon spin boxes and a **Fetch
+  Weather** button that calls the already-existing (Phase 2)
+  `WeatherService` synchronously on the UI thread — same blocking-call
+  pattern `PartsBrowserPanel` already uses for ThrustCurve search, kept
+  for consistency even though `http_transport.hpp`'s own comment flags
+  that as something a GUI should ideally background-thread. After a
+  flight, `FlightPanel` emits `flightCompleted(eastM, northM)`;
+  `LaunchSitePanel` converts that to a landing lat/lon via a flat-earth
+  approximation and drops a marker on the map.
+- **Real bug hit mid-implementation**: `QPointer<T>` only works for
+  `QObject`-derived types, and `QGraphicsPixmapItem` isn't one (the
+  `QGraphicsItem` hierarchy deliberately isn't `QObject`-based) — used it
+  to guard an in-flight tile request's lambda against the item having
+  been deleted by a zoom change, caught at compile time (not a subtle
+  runtime bug), fixed with a `sceneGeneration_` counter instead: bumped on
+  every scene rebuild, captured by the request lambda, checked before
+  touching the raw item pointer at all.
+- Elevation is a plain manual spin box (no live elevation lookup — out of
+  scope for this phase); rail azimuth stays defaulted to 0 (north) with no
+  UI control, matching Phase 5's existing simplification.
+- User did a manual interactive click-through this session (map pan/zoom/
+  click, Fetch Weather, live-wind toggle, fly with a landing marker
+  appearing on the map) and confirmed it works — first phase this project
+  has had an actual confirmed interactive test, not just build+test+code-
+  review verification. Native-window automation is still unreliable for
+  the assistant to do itself in this sandbox (see "Known follow-ups").
 
 ## Real bugs found & fixed this project (worth knowing about)
 
@@ -105,8 +105,19 @@ committed and pushed after the user confirms.
   the two independent hand-derivations that pinned down the correct sign.
 - `MainWindow` opened the DB but forgot to call `seedIfEmpty()` — caught
   via actually launching the GUI and seeing an empty parts catalog, not
-  via compiling. (That function is now `seedIfNeeded()` — see this
-  session's entry above for the follow-up bug this one had.)
+  via compiling. That function is now `seedIfNeeded()`, after a follow-up
+  bug: its `componentCount() > 0` "already seeded" guard meant any
+  database that predated a seed-data change (e.g. the OpenRocket catalog
+  import replacing the original ~25-part set) would never pick up new
+  seed data — fixed with a `seed_meta`/`kSeedVersion` version check,
+  verified against a copy of the real (stale) GUI database, not just a
+  fresh `:memory:` test db.
+- `QPointer<T>` only works for `QObject`-derived types —
+  `QGraphicsPixmapItem` isn't one, so it can't guard an in-flight
+  `QNetworkReply` callback against its target item having been deleted
+  (e.g. by a map zoom level change). Used a manually-bumped generation
+  counter instead (`MapTileWidget::sceneGeneration_`): captured by the
+  request lambda, checked before the raw item pointer is touched at all.
 - A **portable standalone build** exists at
   `C:\Users\reach\Dance\project_apogee\dist\` (exe + Qt DLLs + plugin
   folders, deliberately **no** `qt.conf` — see the bullet above for why —
@@ -126,20 +137,37 @@ committed and pushed after the user confirms.
   hundreds of entries per type (e.g. 765 nose cones) with no filter — Qt
   combos support type-ahead search so it's functional, but a
   searchable/filterable picker would be nicer. PartsBrowserPanel's
-  read-only catalog table got a manufacturer filter this session; the
-  Design tab's actual selection combos did not.
+  read-only catalog table has a manufacturer filter (Phase 5 session); the
+  Design tab's actual selection combos still don't.
 - Native-window UI automation (clicks, screenshots, `SetForegroundWindow`)
-  is unreliable in this sandbox — see this session's entry above. When
-  re-verifying UI changes, prefer non-visual checks against the real data
-  (headless tool output, DB inspection) over interactive click sequences
-  where possible; a manual click-through by the user is worth doing for
-  anything not covered that way.
-- Phase 5's Flight tab (Fly → charts → summary stats) has not had an
-  actual interactive click-through yet — worth doing early next session.
+  is unreliable for the *assistant* to drive in this sandbox — clicks have
+  landed on unrelated host windows more than once. A manual click-through
+  by the user is the reliable verification path; that's what confirmed
+  both Phase 5 and Phase 6 this session. Prefer non-visual checks
+  (headless tool output, DB inspection) for anything the assistant needs
+  to self-verify.
+- `LaunchSitePanel::onFetchWeatherClicked()` calls `WeatherService`
+  synchronously on the UI thread (briefly blocks while the NWS/Open-Meteo
+  requests complete) — matches `PartsBrowserPanel`'s existing ThrustCurve
+  search pattern, but `data/include/data/http_transport.hpp`'s own comment
+  says GUI callers should ideally wrap these in a background `QThread`
+  (`SimulationWorker`-style). Neither panel does that yet; worth
+  revisiting if either fetch is ever slow enough to be annoying.
+- Launch-site elevation is a manual spin box, not looked up automatically
+  (e.g. via Open-Meteo's elevation API) — fine for now, flagged as a
+  possible nicety. Rail azimuth stays hardcoded to 0 (north) with no UI
+  control, same simplification Phase 5 already made.
+- `MapTileWidget`'s on-disk tile cache (`QNetworkDiskCache`) depends on
+  Esri's response headers actually enabling HTTP caching — not verified
+  either way; if tiles seem to always re-fetch across app restarts, check
+  that first.
+- No "center map on landing marker" convenience after a flight — if the
+  landing point drifts outside the currently-panned view, the user has to
+  manually pan/zoom to find it.
 
 ## How to resume
 
-Just say "cleared for phase 6" (or whatever's next) and go — the assistant
+Just say "cleared for phase 7" (or whatever's next) and go — the assistant
 should re-read this file's context, confirm the build's still green
 (`.\build.ps1 -BuildGui`), and continue from there. Always confirm with the
 user before `git push` (standing instruction), and test before pushing.

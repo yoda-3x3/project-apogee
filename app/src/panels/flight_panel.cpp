@@ -17,6 +17,8 @@
 #include "core/simulation.hpp"
 #include "core/wind_field.hpp"
 #include "data/motor_repository.hpp"
+#include "data/weather_types.hpp"
+#include "models/launch_site.hpp"
 #include "models/rocket_design.hpp"
 #include "widgets/chart_widget.hpp"
 #include "workers/simulation_worker.hpp"
@@ -27,9 +29,12 @@ namespace {
 QString formatBool(bool value) { return value ? "Yes" : "No"; }
 }  // namespace
 
-FlightPanel::FlightPanel(QSqlDatabase& db, RocketDesign& design, QWidget* parent)
-    : QWidget(parent), db_(db), design_(design) {
+FlightPanel::FlightPanel(QSqlDatabase& db, RocketDesign& design, LaunchSite& launchSite, QWidget* parent)
+    : QWidget(parent), db_(db), design_(design), launchSite_(launchSite) {
     buildUi();
+
+    connect(&launchSite_, &LaunchSite::changed, this, &FlightPanel::refreshLaunchSiteSummary);
+    refreshLaunchSiteSummary();
 
     worker_ = new SimulationWorker(this);
     connect(worker_, &SimulationWorker::finished, this, &FlightPanel::onSimulationFinished);
@@ -48,30 +53,9 @@ void FlightPanel::buildUi() {
     auto* launchGroup = new QGroupBox("Launch Conditions", leftColumn);
     auto* launchForm = new QFormLayout(launchGroup);
 
-    railLengthSpin_ = new QDoubleSpinBox(launchGroup);
-    railLengthSpin_->setRange(0.3, 10.0);
-    railLengthSpin_->setSingleStep(0.1);
-    railLengthSpin_->setSuffix(" m");
-    railLengthSpin_->setValue(1.0);
-    launchForm->addRow("Rail length:", railLengthSpin_);
-
-    railAngleSpin_ = new QDoubleSpinBox(launchGroup);
-    railAngleSpin_->setRange(0.0, 45.0);
-    railAngleSpin_->setSingleStep(1.0);
-    railAngleSpin_->setSuffix(" deg from vertical");
-    launchForm->addRow("Rail angle:", railAngleSpin_);
-
-    windSpeedSpin_ = new QDoubleSpinBox(launchGroup);
-    windSpeedSpin_->setRange(0.0, 30.0);
-    windSpeedSpin_->setSingleStep(0.5);
-    windSpeedSpin_->setSuffix(" m/s");
-    launchForm->addRow("Ground wind speed:", windSpeedSpin_);
-
-    windDirectionSpin_ = new QDoubleSpinBox(launchGroup);
-    windDirectionSpin_->setRange(0.0, 359.0);
-    windDirectionSpin_->setSingleStep(15.0);
-    windDirectionSpin_->setSuffix(" deg (from north)");
-    launchForm->addRow("Wind direction:", windDirectionSpin_);
+    launchSiteSummaryLabel_ = new QLabel(launchGroup);
+    launchSiteSummaryLabel_->setWordWrap(true);
+    launchForm->addRow(launchSiteSummaryLabel_);
 
     ejectionDelaySpin_ = new QDoubleSpinBox(launchGroup);
     ejectionDelaySpin_->setRange(0.0, 15.0);
@@ -145,6 +129,16 @@ void FlightPanel::onFlyClicked() {
         statusLabel_->setText("Select a motor in the Design tab first.");
         return;
     }
+    if (!launchSite_.hasCoordinates()) {
+        statusLabel_->setText("Pick a launch site in the Launch tab first.");
+        return;
+    }
+    if (launchSite_.useLiveWind() && !launchSite_.weather()) {
+        statusLabel_->setText(
+            "\"Use live wind\" is on but weather hasn't been fetched -- fetch it in the Launch tab, or "
+            "turn that off to fly with manual wind.");
+        return;
+    }
 
     data::MotorRepository motorRepo(db_);
     const QVector<data::ThrustSample> cachedSamples = motorRepo.getCachedSamples(design_.motor()->id);
@@ -164,9 +158,21 @@ void FlightPanel::onFlyClicked() {
     core::MotorModel motor(std::move(samples), propellantMassKg, casingMassKg);
 
     core::LaunchConditions launch;
-    launch.railLengthM = railLengthSpin_->value();
-    launch.railAngleFromVerticalDeg = railAngleSpin_->value();
-    launch.wind = core::WindField::powerLawShear(windSpeedSpin_->value(), windDirectionSpin_->value());
+    launch.railLengthM = launchSite_.railLengthM();
+    launch.railAngleFromVerticalDeg = launchSite_.railAngleDeg();
+    launch.launchSiteElevationM = launchSite_.elevationM();
+
+    if (launchSite_.useLiveWind() && launchSite_.weather()) {
+        std::vector<core::WindLevel> levels;
+        levels.reserve(static_cast<std::size_t>(launchSite_.weather()->windAloft.levels.size()));
+        for (const data::WindLevel& level : launchSite_.weather()->windAloft.levels) {
+            levels.push_back({level.altitudeM, level.speedMs, level.directionDeg});
+        }
+        launch.wind = core::WindField::fromLevels(std::move(levels));
+    } else {
+        launch.wind = core::WindField::powerLawShear(launchSite_.manualWindSpeedMs(),
+                                                       launchSite_.manualWindDirectionDeg());
+    }
 
     core::SimulationConfig config;
     config.ejectionDelayS = ejectionDelaySpin_->value();
@@ -208,6 +214,28 @@ void FlightPanel::onSimulationFinished() {
     accelChart_->setData(gPoints, markers);
 
     updateSummary(telemetry.summary);
+    emit flightCompleted(telemetry.summary.landingOffsetM.x, telemetry.summary.landingOffsetM.y);
+}
+
+void FlightPanel::refreshLaunchSiteSummary() {
+    if (!launchSite_.hasCoordinates()) {
+        launchSiteSummaryLabel_->setText("No launch site picked yet -- set one in the Launch tab.");
+        return;
+    }
+
+    const QString windText = launchSite_.useLiveWind() && launchSite_.weather()
+                                  ? "live wind-aloft profile"
+                                  : QString("manual wind %1 m/s from %2 deg")
+                                        .arg(launchSite_.manualWindSpeedMs(), 0, 'f', 1)
+                                        .arg(launchSite_.manualWindDirectionDeg(), 0, 'f', 0);
+
+    launchSiteSummaryLabel_->setText(QString("Site: %1, %2 (%3 m ASL) | Rail: %4 m at %5 deg | Wind: %6")
+                                          .arg(launchSite_.latitude(), 0, 'f', 4)
+                                          .arg(launchSite_.longitude(), 0, 'f', 4)
+                                          .arg(launchSite_.elevationM(), 0, 'f', 0)
+                                          .arg(launchSite_.railLengthM(), 0, 'f', 1)
+                                          .arg(launchSite_.railAngleDeg(), 0, 'f', 0)
+                                          .arg(windText));
 }
 
 void FlightPanel::updateSummary(const core::SummaryStats& stats) {
