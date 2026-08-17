@@ -58,6 +58,24 @@ TEST_CASE("ThrustCurveClient parses a real download.json samples response", "[da
     CHECK(simfile->samples.last().thrustN == Catch::Approx(0.0));
 }
 
+TEST_CASE("ThrustCurveClient parses a real metadata.json response", "[data][thrustcurve]") {
+    FixtureHttpTransport transport;
+    transport.addFixture("metadata.json", readFixture("thrustcurve_metadata.json"));
+    ThrustCurveClient client(transport);
+
+    const MotorMetadata metadata = client.fetchMetadata();
+    REQUIRE(metadata.manufacturers.size() > 10);
+
+    bool foundEstes = false;
+    for (const ManufacturerInfo& m : metadata.manufacturers) {
+        if (m.abbrev == "Estes") {
+            foundEstes = true;
+            CHECK(m.name == "Estes Industries");
+        }
+    }
+    CHECK(foundEstes);
+}
+
 TEST_CASE("ThrustCurveClient returns empty/nullopt on a 404", "[data][thrustcurve]") {
     FixtureHttpTransport transport;  // no fixtures registered -> every request 404s
     ThrustCurveClient client(transport);

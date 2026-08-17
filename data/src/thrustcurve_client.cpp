@@ -83,6 +83,24 @@ QVector<MotorSummary> ThrustCurveClient::searchMotors(const MotorSearchCriteria&
     return results;
 }
 
+MotorMetadata ThrustCurveClient::fetchMetadata() {
+    const QUrl url(QString("%1/metadata.json").arg(kBaseUrl));
+    const HttpResponse response = transport_.get(url);
+
+    MotorMetadata metadata;
+    if (response.networkError || response.body.isEmpty()) return metadata;
+
+    const QJsonDocument doc = QJsonDocument::fromJson(response.body);
+    const QJsonArray manufacturers = doc.object().value("manufacturers").toArray();
+    metadata.manufacturers.reserve(manufacturers.size());
+    for (const QJsonValue& v : manufacturers) {
+        const QJsonObject obj = v.toObject();
+        metadata.manufacturers.push_back(
+            {obj.value("name").toString(), obj.value("abbrev").toString()});
+    }
+    return metadata;
+}
+
 std::optional<MotorSimfile> ThrustCurveClient::downloadSamples(const QString& motorId) {
     QUrl url(QString("%1/download.json").arg(kBaseUrl));
     QUrlQuery query;

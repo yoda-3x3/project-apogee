@@ -5,8 +5,8 @@
 
 #include "data/thrustcurve_types.hpp"
 
+class QComboBox;
 class QLabel;
-class QLineEdit;
 class QPushButton;
 class QSqlDatabase;
 class QTableView;
@@ -16,9 +16,11 @@ namespace apogee::app {
 
 // Two read-only/reference tables: every seeded component (browse-only --
 // components come from the embedded seed catalog, nothing to fetch), and a
-// live ThrustCurve.org motor search with a "Cache Motor" action that
-// downloads the motor's thrust samples and stores them locally via
-// MotorRepository, so RocketBuilderPanel's motor combo can pick it up.
+// live ThrustCurve.org motor search. The motor search is a cascading pair
+// of dropdowns -- Manufacturer (from the real ThrustCurve.org metadata
+// list), then Model (from a search filtered to that manufacturer) -- rather
+// than free-text fields or an always-visible results table, since there
+// are only ever a couple hundred motors per manufacturer at most.
 class PartsBrowserPanel : public QWidget {
     Q_OBJECT
 public:
@@ -28,27 +30,27 @@ signals:
     void motorsCached();
 
 private slots:
-    void onSearchClicked();
+    void onManufacturerChanged();
+    void onModelChanged();
     void onCacheMotorClicked();
 
 private:
     void buildUi();
     void reloadComponentsTable();
+    void loadManufacturers();
 
     QSqlDatabase& db_;
 
     QTableView* componentsTable_ = nullptr;
     QStandardItemModel* componentsModel_ = nullptr;
 
-    QLineEdit* manufacturerEdit_ = nullptr;
-    QLineEdit* designationEdit_ = nullptr;
-    QPushButton* searchButton_ = nullptr;
-    QTableView* motorResultsTable_ = nullptr;
-    QStandardItemModel* motorResultsModel_ = nullptr;
+    QComboBox* manufacturerCombo_ = nullptr;
+    QComboBox* modelCombo_ = nullptr;
     QPushButton* cacheMotorButton_ = nullptr;
     QLabel* statusLabel_ = nullptr;
+    QLabel* selectedMotorDetailLabel_ = nullptr;
 
-    QVector<data::MotorSummary> lastSearchResults_;
+    QVector<data::MotorSummary> currentModels_;
 };
 
 }  // namespace apogee::app

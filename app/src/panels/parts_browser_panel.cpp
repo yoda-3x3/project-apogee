@@ -1,10 +1,11 @@
 #include "panels/parts_browser_panel.hpp"
 
+#include <QComboBox>
+#include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
-#include <QLineEdit>
 #include <QPushButton>
 #include <QSqlDatabase>
 #include <QStandardItemModel>
@@ -18,9 +19,27 @@
 
 namespace apogee::app {
 
+namespace {
+constexpr int kUnselectedItemData = -1;
+
+QString formatModelLabel(const data::MotorSummary& m) {
+    return QString("%1 (%2, %3 Ns)").arg(m.designation, m.impulseClass).arg(m.totImpulseNs, 0, 'f', 1);
+}
+
+QString formatMotorDetail(const data::MotorSummary& m) {
+    return QString("%1 %2 -- avg %3 N, max %4 N, total impulse %5 Ns, burn %6 s")
+        .arg(m.manufacturer, m.designation)
+        .arg(m.avgThrustN, 0, 'f', 2)
+        .arg(m.maxThrustN, 0, 'f', 2)
+        .arg(m.totImpulseNs, 0, 'f', 2)
+        .arg(m.burnTimeS, 0, 'f', 2);
+}
+}  // namespace
+
 PartsBrowserPanel::PartsBrowserPanel(QSqlDatabase& db, QWidget* parent) : QWidget(parent), db_(db) {
     buildUi();
     reloadComponentsTable();
+    loadManufacturers();
 }
 
 void PartsBrowserPanel::buildUi() {
@@ -40,30 +59,22 @@ void PartsBrowserPanel::buildUi() {
     layout->addWidget(catalogGroup, 1);
 
     auto* searchGroup = new QGroupBox("ThrustCurve.org Motor Search", this);
-    auto* searchLayout = new QVBoxLayout(searchGroup);
+    auto* searchForm = new QFormLayout(searchGroup);
 
-    auto* searchRow = new QHBoxLayout();
-    manufacturerEdit_ = new QLineEdit(searchGroup);
-    manufacturerEdit_->setPlaceholderText("Manufacturer (e.g. Estes)");
-    designationEdit_ = new QLineEdit(searchGroup);
-    designationEdit_->setPlaceholderText("Designation (e.g. C6)");
-    searchButton_ = new QPushButton("Search", searchGroup);
-    searchRow->addWidget(manufacturerEdit_);
-    searchRow->addWidget(designationEdit_);
-    searchRow->addWidget(searchButton_);
-    searchLayout->addLayout(searchRow);
-    connect(searchButton_, &QPushButton::clicked, this, &PartsBrowserPanel::onSearchClicked);
+    manufacturerCombo_ = new QComboBox(searchGroup);
+    searchForm->addRow("Manufacturer:", manufacturerCombo_);
+    connect(manufacturerCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            &PartsBrowserPanel::onManufacturerChanged);
 
-    motorResultsModel_ = new QStandardItemModel(0, 5, this);
-    motorResultsModel_->setHorizontalHeaderLabels(
-        {"Manufacturer", "Designation", "Impulse Class", "Avg Thrust (N)", "Total Impulse (Ns)"});
-    motorResultsTable_ = new QTableView(searchGroup);
-    motorResultsTable_->setModel(motorResultsModel_);
-    motorResultsTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    motorResultsTable_->setSelectionBehavior(QAbstractItemView::SelectRows);
-    motorResultsTable_->setSelectionMode(QAbstractItemView::SingleSelection);
-    motorResultsTable_->horizontalHeader()->setStretchLastSection(true);
-    searchLayout->addWidget(motorResultsTable_);
+    modelCombo_ = new QComboBox(searchGroup);
+    modelCombo_->setEnabled(false);
+    searchForm->addRow("Model:", modelCombo_);
+    connect(modelCombo_, qOverload<int>(&QComboBox::currentIndexChanged), this,
+            &PartsBrowserPanel::onModelChanged);
+
+    selectedMotorDetailLabel_ = new QLabel(searchGroup);
+    selectedMotorDetailLabel_->setWordWrap(true);
+    searchForm->addRow(selectedMotorDetailLabel_);
 
     auto* cacheRow = new QHBoxLayout();
     cacheMotorButton_ = new QPushButton("Cache Selected Motor", searchGroup);
@@ -72,12 +83,9 @@ void PartsBrowserPanel::buildUi() {
     cacheRow->addWidget(cacheMotorButton_);
     statusLabel_ = new QLabel(searchGroup);
     cacheRow->addWidget(statusLabel_, 1);
-    searchLayout->addLayout(cacheRow);
+    searchForm->addRow(cacheRow);
 
-    connect(motorResultsTable_->selectionModel(), &QItemSelectionModel::selectionChanged, this,
-            [this]() { cacheMotorButton_->setEnabled(motorResultsTable_->currentIndex().isValid()); });
-
-    layout->addWidget(searchGroup, 1);
+    layout->addWidget(searchGroup);
 }
 
 void PartsBrowserPanel::reloadComponentsTable() {
@@ -96,39 +104,71 @@ void PartsBrowserPanel::reloadComponentsTable() {
     }
 }
 
-void PartsBrowserPanel::onSearchClicked() {
-    statusLabel_->setText("Searching...");
+void PartsBrowserPanel::loadManufacturers() {
+    statusLabel_->setText("Loading manufacturers...");
+
+    data::NetworkHttpTransport transport;
+    data::ThrustCurveClient client(transport);
+    const data::MotorMetadata metadata = client.fetchMetadata();
+
+    manufacturerCombo_->clear();
+    manufacturerCombo_->addItem("(select manufacturer)", kUnselectedItemData);
+    for (const data::ManufacturerInfo& m : metadata.manufacturers) {
+        manufacturerCombo_->addItem(m.name, m.abbrev);
+    }
+
+    statusLabel_->setText(metadata.manufacturers.isEmpty()
+                               ? "Could not load manufacturers (check network connection)"
+                               : QString("%1 manufacturers available").arg(metadata.manufacturers.size()));
+}
+
+void PartsBrowserPanel::onManufacturerChanged() {
+    modelCombo_->clear();
+    modelCombo_->setEnabled(false);
+    selectedMotorDetailLabel_->clear();
+    cacheMotorButton_->setEnabled(false);
+    currentModels_.clear();
+
+    const QString abbrev = manufacturerCombo_->currentData().toString();
+    if (abbrev.isEmpty()) return;
+
+    statusLabel_->setText(QString("Searching %1 motors...").arg(manufacturerCombo_->currentText()));
 
     data::NetworkHttpTransport transport;
     data::ThrustCurveClient client(transport);
     data::MotorSearchCriteria criteria;
-    criteria.manufacturer = manufacturerEdit_->text().trimmed();
-    criteria.designation = designationEdit_->text().trimmed();
-    criteria.maxResults = 25;
+    criteria.manufacturer = abbrev;
+    criteria.maxResults = 250;
+    currentModels_ = client.searchMotors(criteria);
 
-    lastSearchResults_ = client.searchMotors(criteria);
+    modelCombo_->addItem("(select model)", kUnselectedItemData);
+    for (int i = 0; i < currentModels_.size(); ++i) {
+        modelCombo_->addItem(formatModelLabel(currentModels_[i]), i);
+    }
+    modelCombo_->setEnabled(!currentModels_.isEmpty());
 
-    motorResultsModel_->removeRows(0, motorResultsModel_->rowCount());
-    motorResultsModel_->setRowCount(static_cast<int>(lastSearchResults_.size()));
-    for (int row = 0; row < lastSearchResults_.size(); ++row) {
-        const data::MotorSummary& m = lastSearchResults_[row];
-        motorResultsModel_->setItem(row, 0, new QStandardItem(m.manufacturer));
-        motorResultsModel_->setItem(row, 1, new QStandardItem(m.designation));
-        motorResultsModel_->setItem(row, 2, new QStandardItem(m.impulseClass));
-        motorResultsModel_->setItem(row, 3, new QStandardItem(QString::number(m.avgThrustN, 'f', 2)));
-        motorResultsModel_->setItem(row, 4, new QStandardItem(QString::number(m.totImpulseNs, 'f', 2)));
+    statusLabel_->setText(currentModels_.isEmpty()
+                               ? "No motors found for that manufacturer"
+                               : QString("%1 model(s)").arg(currentModels_.size()));
+}
+
+void PartsBrowserPanel::onModelChanged() {
+    const int index = modelCombo_->currentData().toInt();
+    if (index < 0 || index >= currentModels_.size()) {
+        selectedMotorDetailLabel_->clear();
+        cacheMotorButton_->setEnabled(false);
+        return;
     }
 
-    statusLabel_->setText(lastSearchResults_.isEmpty()
-                               ? "No results (check network connection or search terms)"
-                               : QString("%1 result(s)").arg(lastSearchResults_.size()));
+    selectedMotorDetailLabel_->setText(formatMotorDetail(currentModels_[index]));
+    cacheMotorButton_->setEnabled(true);
 }
 
 void PartsBrowserPanel::onCacheMotorClicked() {
-    const int row = motorResultsTable_->currentIndex().row();
-    if (row < 0 || row >= lastSearchResults_.size()) return;
+    const int index = modelCombo_->currentData().toInt();
+    if (index < 0 || index >= currentModels_.size()) return;
 
-    const data::MotorSummary& motor = lastSearchResults_[row];
+    const data::MotorSummary& motor = currentModels_[index];
     statusLabel_->setText(QString("Caching %1 %2...").arg(motor.manufacturer, motor.designation));
 
     data::NetworkHttpTransport transport;

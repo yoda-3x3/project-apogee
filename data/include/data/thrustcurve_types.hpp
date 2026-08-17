@@ -59,4 +59,15 @@ struct MotorSearchCriteria {
     int maxResults = 20;
 };
 
+struct ManufacturerInfo {
+    QString name;
+    QString abbrev;
+};
+
+// Mirrors /api/v1/metadata.json (verified live 2026-08-16) -- valid filter
+// values, used to populate the Parts Browser's manufacturer dropdown.
+struct MotorMetadata {
+    QVector<ManufacturerInfo> manufacturers;
+};
+
 }  // namespace apogee::data

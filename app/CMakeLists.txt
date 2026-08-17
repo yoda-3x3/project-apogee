@@ -13,6 +13,7 @@ qt_add_executable(apogee_studio WIN32
     src/widgets/rocket_diagram_widget.hpp
     src/widgets/rocket_diagram_widget.cpp
     resources/themes.qrc
+    resources/app_icon.rc
 )
 
 target_include_directories(apogee_studio PRIVATE src)

@@ -17,6 +17,12 @@ public:
 
     QVector<MotorSummary> searchMotors(const MotorSearchCriteria& criteria);
 
+    // Real manufacturer list (name + abbreviation) for populating a
+    // manufacturer picker -- there's no separate "designations" endpoint;
+    // once a manufacturer is chosen, searchMotors() with that manufacturer
+    // and a generous maxResults gives the model list instead.
+    MotorMetadata fetchMetadata();
+
     // Downloads pre-parsed thrust samples for a motor, preferring a
     // cert-sourced simfile over a user-submitted one. Returns nullopt if the
     // motor has no simfiles or the request fails.
